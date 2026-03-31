@@ -45,9 +45,18 @@ async function doSearch(page = 0) {
       page, size: 20
     });
 
-    const res  = await fetch(`${API_BASE}/events?${params}`);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+    const res = await fetch(`${API_BASE}/events?${params}`);
+const text = await res.text(); // get raw response
+let data;
+
+try {
+  data = JSON.parse(text); // try parsing JSON
+} catch (e) {
+  console.error('Failed to parse JSON:', text);
+  throw new Error('Failed to fetch events. Please check your server or API key.');
+}
+
+if (!res.ok) throw new Error(data.error || 'Something went wrong.');
 
     totalPages = data.page?.totalPages || 1;
     renderEvents(data.events, data.page?.totalElements || 0, keyword || category || city);
@@ -258,4 +267,3 @@ function closeAbout() {
   const modal = document.getElementById('about-modal');
   modal.style.display = 'none';
 }
-
