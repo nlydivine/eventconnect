@@ -94,6 +94,9 @@ Switch to the Holidays tab to view public holidays for any country/year.
 Click event cards to visit the Ticketmaster page for tickets.
 Use the pagination buttons to navigate through multiple pages.
 
-DEMO Video Link:
-https://youtu.be/nW11AODZQ4A
+
+## Demo Video
+
+Watch a live demo of EventConnect in action:  
+[![EventConnect Demo](https://img.youtube.com/vi/nW11AODZQ4A/0.jpg)](https://youtu.be/nW11AODZQ4A)
 
