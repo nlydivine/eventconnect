@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -8,7 +9,6 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('../frontend'));
 
 const TM_BASE = 'https://app.ticketmaster.com/discovery/v2';
 const HOLIDAY_BASE = 'https://date.nager.at/api/v3';
@@ -24,7 +24,7 @@ app.get('/api/events', async (req, res) => {
     const size = req.query.size || 20;
 
     const params = { apikey: API_KEY, keyword, city, classificationName, sort, page, size };
-    Object.keys(params).forEach(function(k) {
+    Object.keys(params).forEach(k => {
       if (params[k] === '' || params[k] === undefined) delete params[k];
     });
 
@@ -33,25 +33,23 @@ app.get('/api/events', async (req, res) => {
     const events = embedded.events || [];
     const page_info = response.data.page || {};
 
-    const formatted = events.map(function(event) {
-      var dates = event.dates || {};
-      var start = dates.start || {};
-      var status = dates.status || {};
-      var embedded2 = event._embedded || {};
-      var venues = embedded2.venues || [];
-      var venue = venues[0] || {};
-      var city2 = venue.city || {};
-      var country = venue.country || {};
-      var classifications = event.classifications || [];
-      var classification = classifications[0] || {};
-      var segment = classification.segment || {};
-      var genre = classification.genre || {};
-      var images = event.images || [];
-      var image = images.filter(function(img) {
-        return img.ratio === '16_9' && img.width > 500;
-      })[0] || images[0] || {};
-      var priceRanges = event.priceRanges || [];
-      var price = priceRanges[0] || {};
+    const formatted = events.map(event => {
+      const dates = event.dates || {};
+      const start = dates.start || {};
+      const status = dates.status || {};
+      const embedded2 = event._embedded || {};
+      const venues = embedded2.venues || [];
+      const venue = venues[0] || {};
+      const city2 = venue.city || {};
+      const country = venue.country || {};
+      const classifications = event.classifications || [];
+      const classification = classifications[0] || {};
+      const segment = classification.segment || {};
+      const genre = classification.genre || {};
+      const images = event.images || [];
+      const image = images.filter(img => img.ratio === '16_9' && img.width > 500)[0] || images[0] || {};
+      const priceRanges = event.priceRanges || [];
+      const price = priceRanges[0] || {};
 
       return {
         id: event.id,
@@ -74,8 +72,8 @@ app.get('/api/events', async (req, res) => {
 
     res.json({ events: formatted, page: page_info });
   } catch (err) {
-    var errData = err.response ? err.response.data : null;
-    var errStatus = err.response ? err.response.status : null;
+    const errData = err.response ? err.response.data : null;
+    const errStatus = err.response ? err.response.status : null;
     console.error('Ticketmaster error:', errData || err.message);
     if (errStatus === 401) return res.status(401).json({ error: 'Invalid API key.' });
     if (errStatus === 429) return res.status(429).json({ error: 'Rate limit reached. Wait a moment.' });
@@ -87,18 +85,19 @@ app.get('/api/holidays', async (req, res) => {
   try {
     const countryCode = req.query.countryCode || 'RW';
     const year = req.query.year || new Date().getFullYear();
-    const response = await axios.get(HOLIDAY_BASE + '/PublicHolidays/' + year + '/' + countryCode);
-    const holidays = response.data.map(function(h) {
-      var types = h.types || [];
-      return {
-        name: h.name,
-        localName: h.localName,
-        date: h.date,
-        country: countryCode,
-        type: types[0] || 'Public Holiday',
-      };
-    });
-    res.json({ holidays: holidays });
+
+    const response = await axios.get(`${HOLIDAY_BASE}/PublicHolidays/${year}/${countryCode}`);
+    const holidays = Array.isArray(response.data)
+      ? response.data.map(h => ({
+          name: h.name,
+          localName: h.localName,
+          date: h.date,
+          country: countryCode,
+          type: (h.types || [])[0] || 'Public Holiday',
+        }))
+      : [];
+
+    res.json({ holidays });
   } catch (err) {
     console.error('Holidays error:', err.message);
     res.status(500).json({ error: 'Failed to fetch holidays.' });
@@ -108,13 +107,22 @@ app.get('/api/holidays', async (req, res) => {
 app.get('/api/countries', async (req, res) => {
   try {
     const response = await axios.get(HOLIDAY_BASE + '/AvailableCountries');
-    res.json({ countries: response.data });
+    res.json({ countries: Array.isArray(response.data) ? response.data : [] });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch countries.' });
   }
 });
 
-app.listen(PORT, function() {
-  console.log('\n EventConnect running at http://localhost:' + PORT);
-  console.log('   API Key loaded: ' + (API_KEY ? 'Yes' : 'No - check your .env file!') + '\n');
+app.use(express.static(path.join(__dirname, '../frontend')));
+
+app.get('*', (req, res) => {
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+  }
 });
+
+app.listen(PORT, () => {
+  console.log(`EventConnect running at http://localhost:${PORT}`);
+  console.log('API Key loaded: ' + (API_KEY ? 'Yes' : 'No - check your .env file!'));
+});
+

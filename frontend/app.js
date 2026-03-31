@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
     doSearch();
   });
   loadCountries();
+  populateYears();
+  loadHolidays();
 });
 
 function switchTab(tab) {
@@ -86,17 +88,42 @@ async function loadCountries() {
   }
 }
 
+// Populate the year select with current year ±5 years
+function populateYears() {
+  const yearSelect = document.getElementById('year-select');
+  const currentYear = new Date().getFullYear();
+  yearSelect.innerHTML = '';
+  for (let y = currentYear - 5; y <= currentYear + 5; y++) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    if (y === currentYear) opt.selected = true;
+    yearSelect.appendChild(opt);
+  }
+}
+
 async function loadHolidays() {
-  const countryCode = document.getElementById('country-select').value;
-  const year        = document.getElementById('year-select').value;
+  const countryCode = document.getElementById('country-select').value || 'RW';
+  const year        = document.getElementById('year-select').value || new Date().getFullYear();
 
   showLoading('holidays-container');
 
   try {
-    const res  = await fetch(`${API_BASE}/holidays?countryCode=${countryCode}&year=${year}`);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+    const res = await fetch(`${API_BASE}/holidays?countryCode=${countryCode}&year=${year}`);
+    const text = await res.text();
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.error('Invalid JSON:', text);
+      throw new Error('Failed to fetch holidays. Please try again.');
+    }
+
+    if (!res.ok) throw new Error(data.error || 'Failed to fetch holidays.');
+
     renderHolidays(data.holidays, countryCode, year);
+
   } catch (err) {
     showError('holidays-container', err.message);
     showToast(err.message);
@@ -107,11 +134,11 @@ function renderHolidays(holidays, countryCode, year) {
   const container = document.getElementById('holidays-container');
 
   if (!holidays || holidays.length === 0) {
-    container.innerHTML = `<div class="empty-state"><p>No holidays found for this country/year.</p></div>`;
+    container.innerHTML = `<div class="empty-state"><p>No holidays found for ${countryCode} in ${year}.</p></div>`;
     return;
   }
 
-  let rows = holidays.map(h => `
+  const rows = holidays.map(h => `
     <tr>
       <td>${formatDate(h.date)}</td>
       <td>${escHtml(h.name)}</td>
