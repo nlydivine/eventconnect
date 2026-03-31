@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('C:\\Users\\user\\Desktop\\eventconnect\\frontend'));
+app.use(express.static('../frontend'));
 
 const TM_BASE = 'https://app.ticketmaster.com/discovery/v2';
 const HOLIDAY_BASE = 'https://date.nager.at/api/v3';
