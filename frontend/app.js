@@ -248,3 +248,14 @@ function escHtml(str) {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
   );
 }
+
+function showAbout() {
+  const modal = document.getElementById('about-modal');
+  modal.style.display = 'flex';
+}
+
+function closeAbout() {
+  const modal = document.getElementById('about-modal');
+  modal.style.display = 'none';
+}
+
