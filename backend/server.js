@@ -34,23 +34,38 @@ app.get('/api/events', async (req, res) => {
     const events = response.data._embedded?.events || [];
     const page_info = response.data.page || {};
 
-    const formatted = events.map(event => ({
-      id: event.id,
-      name: event.name,
-      date: event.dates?.start?.localDate || 'TBA',
-      time: event.dates?.start?.localTime || '',
-      venue: event._embedded?.venues?.[0]?.name || 'Venue TBA',
-      city: event._embedded?.venues?.[0]?.city?.name || '',
-      country: event._embedded?.venues?.[0]?.country?.name || '',
-      category: event.classifications?.[0]?.segment?.name || 'Event',
-      genre: event.classifications?.[0]?.genre?.name || '',
-      image: event.images?.find(img => img.ratio === '16_9' && img.width > 500)?.url || event.images?.[0]?.url || '',
-      url: event.url || '#',
-      priceMin: event.priceRanges?.[0]?.min ?? null,
-      priceMax: event.priceRanges?.[0]?.max ?? null,
-      currency: event.priceRanges?.[0]?.currency || 'USD',
-      status: event.dates?.status?.code || 'onsale',
-    }));
+    const formatted = events.map(function(event) {
+  var dates = event.dates || {};
+  var start = dates.start || {};
+  var venues = (event._embedded && event._embedded.venues) || [];
+  var venue = venues[0] || {};
+  var classifications = event.classifications || [];
+  var classification = classifications[0] || {};
+  var segment = classification.segment || {};
+  var genre = classification.genre || {};
+  var images = event.images || [];
+  var image = images.find(function(img) { return img.ratio === '16_9' && img.width > 500; }) || images[0] || {};
+  var priceRanges = event.priceRanges || [];
+  var price = priceRanges[0] || {};
+  var status = dates.status || {};
+  return {
+    id: event.id,
+    name: event.name,
+    date: start.localDate || 'TBA',
+    time: start.localTime || '',
+    venue: venue.name || 'Venue TBA',
+    city: (venue.city && venue.city.name) || '',
+    country: (venue.country && venue.country.name) || '',
+    category: segment.name || 'Event',
+    genre: genre.name || '',
+    image: image.url || '',
+    url: event.url || '#',
+    priceMin: price.min !== undefined ? price.min : null,
+    priceMax: price.max !== undefined ? price.max : null,
+    currency: price.currency || 'USD',
+    status: status.code || 'onsale',
+  };
+});
 
     res.json({ events: formatted, page: page_info });
   } catch (err) {
